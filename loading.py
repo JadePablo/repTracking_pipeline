@@ -3,7 +3,9 @@ from pymongo import MongoClient
 import pandas as pd
 import os
 
+from dotenv import load_dotenv
 
+load_dotenv()
 
 class invalidExerciseError(Exception):
     pass
@@ -45,8 +47,8 @@ def load(recordedReps: pd.DataFrame, newRow_group: str) -> None:
     Args:
         recordedReps (pd.DataFrame): meta and timing information about the recorded reps.
     """
-
-    client = MongoClient('mongodb+srv://allenjade154:pJTxInCYg7oHMjH2@cluster0.pkgjxpn.mongodb.net/')
+    connection_string = os.getenv('CONNECTION_STRING')
+    client = MongoClient(connection_string)
     db = client['Cluster0']
     collection = db[newRow_group]
     mongodb_readable = recordedReps.to_dict(orient='records')
