@@ -277,8 +277,10 @@ def test():
 
 #prompt exercise
 def prompt_exercise() -> dict:
-    for key in threshold_dict:
-        print(key)
+    # for key in threshold_dict:
+    #     print(key)
+    print('curls')
+
     exercise = input('pick an exercise: choose from above or i\'ll keep asking: ')
 
     while (exercise not in threshold_dict):
@@ -298,11 +300,11 @@ def prompt_exercise() -> dict:
 def extract():
     input = prompt_exercise()
 
-    exercise_group = threshold_dict[input['exercise']][3]
-
-    if (exercise_group == "converging"):
+    exercise_group = threshold_dict[input['exercise']][2]
+    print(exercise_group)
+    if (exercise_group == "converge"):
         return convergingExercise_extract(input['exercise'],input['reps'])
 
-    if(exercise_group == "diverging"):
+    if(exercise_group == "diverge"):
         return divergingExercise_extract(input['exercise'],input['reps'])
 

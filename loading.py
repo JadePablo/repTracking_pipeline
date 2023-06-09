@@ -58,12 +58,14 @@ def prompt_confirmation(recordedReps: pd.DataFrame) -> bool:
     return False
 
 #package the loading process into one function
-def upload_data(recordedReps: pd.DataFrame, newRow_group: str) -> None:
+def upload_data(recordedReps: pd.DataFrame, exercise: str) -> None:
+
+    perceivedGroup = getGroup(exercise)
     choice = prompt_confirmation(recordedReps)
 
     if choice:
         print('uploading...')
-        load(recordedReps,newRow_group)
+        load(recordedReps,perceivedGroup)
     else:
         print('no upload')
 
@@ -71,5 +73,3 @@ def upload_data(recordedReps: pd.DataFrame, newRow_group: str) -> None:
 def test_loading():
     sample_df = test()
     upload_data(sample_df,'pull')
-
-test_loading()

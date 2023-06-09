@@ -145,7 +145,7 @@ def get_reps(stages:dict,exercise_name: str) -> pd.DataFrame:
         reps.at[i,'top_pause'] = stages['tops'][i][1] - stages['tops'][i][0]
 
     reps['exercise'] = exercise_name
-    reps['date'] = date.today()
+    reps['date'] = date.today().strftime("%Y-%m-%d")
     #feed me into the loading script as is
     return(reps)
 
@@ -180,7 +180,7 @@ def test() -> pd.DataFrame:
     test_df = pd.read_csv('curls_test.csv')
     pd.set_option('display.max_rows',None)
     pd.set_option('display.max_columns',None)
-    print( transform(test_df,'curls'))
+    return ( transform(test_df,'curls'))
     # labelled_data = add_position_labels(test_df,'curls')
     #
     # result = get_stages(labelled_data)
@@ -190,7 +190,4 @@ def test() -> pd.DataFrame:
     # pd.set_option('display.max_rows',None)
     #
     # print(get_reps(result))
-
-
-test()
 
