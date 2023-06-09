@@ -3,11 +3,13 @@ from extract import extract
 from transform import transform
 from loading import upload_data
 
-#package the entire pipeline into one process
-"""
-prompt -> extract process -> transformation process -> loading process
-"""
+
 def record():
+    """
+    packages the entire rep-recording pipeline into one process:
+
+    prompt -> extract process -> transformation process -> loading process
+    """
     prompt = 'y'
     prompt = input('keep going (y) for yes, (anything) for no: ')
 

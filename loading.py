@@ -1,13 +1,25 @@
-import pandas as pd
+#not packaged wtih python (install dependencies before use)
 from pymongo import MongoClient
+import pandas as pd
+import os
 
-#testing purposes
-from transform import test
+
+
 class invalidExerciseError(Exception):
     pass
 
 
 def getGroup(exercise: str) -> str:
+    """
+    Find which group (push , pull , legs) that 'exercise' belongs to
+
+    Args:
+        exercise (str): name of exercise.
+
+    Returns:
+        str: the group that the exercise belongs in.
+    """
+
     pull_exercises = ['pullup', 'row', 'rear-delt-fly', 'curls', 'hammer_curl']
     push_exercises = ['dip', 'incline_press', 'shoulder_press', 'lateral_raise']
     leg_exercises = ['standing_calf_raise', 'rdl', 'bulgarian_split_squat']
@@ -27,6 +39,13 @@ def getGroup(exercise: str) -> str:
 
 
 def load(recordedReps: pd.DataFrame, newRow_group: str) -> None:
+    """
+    upload the 'recordedReps' dataframe into database.
+
+    Args:
+        recordedReps (pd.DataFrame): meta and timing information about the recorded reps.
+    """
+
     client = MongoClient('mongodb+srv://allenjade154:pJTxInCYg7oHMjH2@cluster0.pkgjxpn.mongodb.net/')
     db = client['Cluster0']
     collection = db[newRow_group]
@@ -57,7 +76,7 @@ def prompt_confirmation(recordedReps: pd.DataFrame) -> bool:
 
     return False
 
-#package the loading process into one function
+
 def upload_data(recordedReps: pd.DataFrame, exercise: str) -> None:
 
     perceivedGroup = getGroup(exercise)
@@ -69,7 +88,3 @@ def upload_data(recordedReps: pd.DataFrame, exercise: str) -> None:
     else:
         print('no upload')
 
-
-def test_loading():
-    sample_df = test()
-    upload_data(sample_df,'pull')

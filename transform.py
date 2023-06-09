@@ -1,17 +1,27 @@
+#import dependencies of these modules before use
 import pandas as pd
 import numpy as np
 import random
 
+#these come packaged with python
 from datetime import date
 from typing import List, Tuple
 from thresholds import threshold_dict
-"""
-one rep follows the stages: bottom,top,bottom
 
-how to extrapolate info per rep:
-start_time = 
-"""
-def add_position_labels(input_df: pd.DataFrame,exercise_name: object) -> int:
+def add_position_labels(input_df: pd.DataFrame,exercise_name: object) -> pd.DataFrame:
+    """
+    add the movement stages (bottom,top,ascent,descent) to the recordings.
+
+    Args:
+        input_df (pd.DataFrame): dataframe of raw recordings
+        exercise_name (pd.DataFrame): associated performed exercise
+
+    Returns:
+        pd.DataFrame: annotated raw recordings
+
+    """
+
+    #look up the exercises bottom and top thresholds
     bottom = threshold_dict[exercise_name][0]
     top = threshold_dict[exercise_name][1]
 
@@ -20,7 +30,8 @@ def add_position_labels(input_df: pd.DataFrame,exercise_name: object) -> int:
     bottom_reached = False
     top_reached = False
 
-    # Define a lambda function to determine the position based on the 'angle' value
+
+    #lambda function using the thresholds to distinguish 'top' and 'bottom' stages
     position_function = lambda angle: 'bottom' if angle >= bottom else 'top' if angle <= top else None
 
     # Apply the lambda function to create the 'position' column
@@ -28,6 +39,8 @@ def add_position_labels(input_df: pd.DataFrame,exercise_name: object) -> int:
 
     last_visited = None
 
+    #annotate recordings that captures an 'ascent' (rows between bottom and top)
+    #do the same for recordings that captures a 'descent' (rows between top and bottom)
     for index, row in labelled_input.iterrows():
         if row['position'] == "bottom":
             last_visited = "bottom"
@@ -39,14 +52,26 @@ def add_position_labels(input_df: pd.DataFrame,exercise_name: object) -> int:
             else:
                 labelled_input.at[index, 'position'] = "descent"
 
-
     return labelled_input
-def get_stages(labelled_df: pd.DataFrame) -> List[Tuple[int, int]]:
+def get_stages_converging(labelled_df: pd.DataFrame) -> dict:
+    """
+    extrapolate the reps and timing information from the annotated raw recording
+
+    Args:
+        labelled_df (pd.DataFrame): annotated raw recording
+
+    Returns:
+        dict:
+            - <key> (string) : the stage of the rep (bottom,top,descent,ascent)
+            - <value> (List<tuple>): tuples of start and end times of each detected stage
+    """
+
+
+    #get the start and end times of each bottom 'island' in the df
     consecutive_bottoms = []
     start_time = None
     prev_position = None
 
-    # Get the time values of bottoms
     for index, row in labelled_df.iterrows():
         if row['position'] == 'bottom':
             if prev_position != 'bottom':
@@ -57,7 +82,7 @@ def get_stages(labelled_df: pd.DataFrame) -> List[Tuple[int, int]]:
 
         prev_position = row['position']
 
-    # Get the time values of tops
+    #get the start and end times of each top 'island' in the df
     consecutive_tops = []
     start_time = None
     prev_position = None
@@ -72,7 +97,7 @@ def get_stages(labelled_df: pd.DataFrame) -> List[Tuple[int, int]]:
 
         prev_position = row['position']
 
-    # Get the time values of ascents
+    #get the start and end times of each ascent 'island' in the df
     consecutive_ascents = []
     start_time = None
     prev_position = None
@@ -87,7 +112,7 @@ def get_stages(labelled_df: pd.DataFrame) -> List[Tuple[int, int]]:
 
         prev_position = row['position']
 
-    # Get the time values of descents
+    #get the start and end times of each descent 'island' in the df
     consecutive_descents = []
     start_time = None
     prev_position = None
@@ -102,7 +127,7 @@ def get_stages(labelled_df: pd.DataFrame) -> List[Tuple[int, int]]:
 
         prev_position = row['position']
 
-    # Check if there are consecutive descents at the end
+    #all reps end with a descent, check if there are consecutive descents at the end
     if prev_position == 'descent':
         end_time = labelled_df.at[index, 'time']
         consecutive_descents.append((start_time, end_time))
@@ -116,12 +141,19 @@ def get_stages(labelled_df: pd.DataFrame) -> List[Tuple[int, int]]:
 
 def get_reps(stages:dict,exercise_name: str) -> pd.DataFrame:
     """
+    infer time attributes of the rep using the durations of (bottom,top,ascent,descent) from 'stages'
 
-    :param stages: list of tuples that map the indices to the [start,end] of that stage
-    :return: dataframe containing rep data extrapolated from the input dictionary: stages.
+    Args:
+        stages (dict): pairs of stage_names and list of tuples that map the indices to the [start,end] of that stage
+        exercise_name (string): name of exercise associated with reps
 
+    Returns:
+        pd.DataFrame: dataframe where each row is a rep, and each column are the time attributes (as shown directly below) of each rep
     """
+
     reps = pd.DataFrame(columns=['start','end','total','ascent','descent','top_pause','bottom_pause'])
+
+    #calculate the start of the rep and time spent at the bottom
     for duration in stages['bottoms']:
         new_entry_info = {
             'start': duration[0],
@@ -131,63 +163,40 @@ def get_reps(stages:dict,exercise_name: str) -> pd.DataFrame:
 
         reps = pd.concat([reps,new_entry], ignore_index=True)
 
-
+    #calculate time spent during ascent
     for i in range(len(stages['ascents'])):
         reps.at[i,'ascent'] = stages['ascents'][i][1] - stages['ascents'][i][0]
 
+    #calculate time spent during descent
     for i in range(len(stages['descents'])):
         reps.at[i,'descent'] = stages['descents'][i][1] - stages['descents'][i][0]
         #total = descents[1] - start in df
         reps.at[i,'total'] = stages['descents'][i][1] - reps.loc[i,'start']
         reps.at[i, 'end'] = stages['descents'][i][1]
 
+    #calculate time spent at the top
     for i in range(len(stages['tops'])):
         reps.at[i,'top_pause'] = stages['tops'][i][1] - stages['tops'][i][0]
 
+    #add the exercise name and date of when it was performed
     reps['exercise'] = exercise_name
     reps['date'] = date.today().strftime("%Y-%m-%d")
     #feed me into the loading script as is
     return(reps)
 
-def transform(raw_data: pd.DataFrame , exercise_name: pd.DataFrame):
+def transform(raw_data: pd.DataFrame , exercise_name: pd.DataFrame) -> pd.DataFrame:
+    """
+    bundles the entire transformation sequence into one process
+
+    Args:
+        raw_data (pd.DataFrame): raw_recordings from the extract process
+        exercise_name (string): name of exercise associated with reps
+
+    Returns:
+        pd.DataFrame: information about the reps
+    """
     labelled_data = add_position_labels(raw_data,exercise_name)
-    stages = get_stages(labelled_data)
+    stages = get_stages_converging(labelled_data)
     result = get_reps(stages,exercise_name)
 
     return result
-
-def test() -> pd.DataFrame:
-    # sequence = [(160, 1), (70, 1), (15, 1), (60, 1)]
-    # repetitions = 7
-    #
-    #
-    # # Initialize an empty list to store the rows
-    # rows = []
-    #
-    # # Initialize the initial time value
-    # time = 1
-    #
-    # # Generate the rows based on the sequence and repetitions
-    # for _ in range(repetitions):
-    #     for angle, _ in sequence:
-    #         for _ in range(5):
-    #             rows.append({'angle': angle, 'time': time})
-    #             time += 1
-    #
-    # # Create the DataFrame
-    # df = pd.DataFrame(rows)
-
-    test_df = pd.read_csv('curls_test.csv')
-    pd.set_option('display.max_rows',None)
-    pd.set_option('display.max_columns',None)
-    return ( transform(test_df,'curls'))
-    # labelled_data = add_position_labels(test_df,'curls')
-    #
-    # result = get_stages(labelled_data)
-    # for key,value in result.items():
-    #     print(key,value)
-    #
-    # pd.set_option('display.max_rows',None)
-    #
-    # print(get_reps(result))
-
