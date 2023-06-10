@@ -22,4 +22,4 @@ Real-Time Dashboards / Automated Emailing: MongoDB Charts
 
 ## Sample Dashboard:
 
-![](https://github.com/JadePablo/repTracking_pipeline/blob/master/Jade_Dashboard.png)
+![](https://github.com/JadePablo/repTracking_pipeline/blob/master/sample_dashboard.png)
